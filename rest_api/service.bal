@@ -81,6 +81,34 @@ service /api on new http:Listener(3000) {
         return programmeList;
     }
 
+// Resource function to retrieve programme details by programme_code
+    resource function get ./[string programme_code]() returns json|error {
+        stream<Programmes, sql:Error?> programmeStream = db->query(`
+            SELECT * 
+            FROM Programmes
+            WHERE programme_code = ?
+        `, programme_code);
+
+        Programmes[] programmeList = [];
+        
+        // Collecting programmes from the stream
+        check from Programmes programme in programmeStream
+            do {
+                programmeList.push(programme);
+            };
+
+        // Check if any programmes were found
+        if programmeList.length() > 0 {
+            // Return the list of programmes as JSON
+            return programmeList;
+        } else
+{
+            // Return an error if no programme was found
+            return { "message": "No programme found with code: " + programme_code };
+        }
+    }
+}
+
     // Resource function to add a new programme
     resource function post add_programme(Programmes programme) returns Programmes[]|error {
         // Insert the new programme into the database
